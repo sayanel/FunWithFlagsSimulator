@@ -212,21 +212,16 @@ struct Flag {
             for(int i = 0; i < gridWidth; ++i) {
                 int k = i + j * gridWidth;
                 
-                glm::vec3 v = positionArray[k]-center;
+                float rad = radius + 0.1;
+                glm::vec3 particleToCenter = positionArray[k]-center;
                 float dist = glm::distance(positionArray[k], center);
-                float l = v.length();
-                std::cout << "l: " << l << " rad: " << radius << " dist: " << dist << " v: " << v << std::endl;
-                // if ( v.length() < radius) // if the particle is inside the ball
-                if ( dist < radius) // if the particle is inside the ball
+
+                if ( dist < rad) // si la particule rentre dans la sphere
                 {
-                    // glm::vec3 REPULSIVE = (glm::normalize(v)*(radius-l));
-                    glm::vec3 surface = center + glm::vec3(radius);
-                    glm::vec3 REPULSIVE =  10.f * v * repulsiveForce(dist, positionArray[k], surface);
-                    // REPULSIVE = glm::vec3(glm::normalize(v)*(radius-l));
-                    // REPULSIVE = glm::vec3(glm::normalize(v)*(radius-l));
-                    // REPULSIVE = glm::vec3(dist);
-                    forceArray[k] += REPULSIVE; // project the particle to the surface of the ball
-                    std::cout << "BALL collision: " << k << " REPULSIVE: " << REPULSIVE << std::endl;
+                    glm::vec3 REPULSIVE = glm::vec3(glm::normalize(particleToCenter)*(rad-dist));
+                    forceArray[k] += REPULSIVE; // envoie la particule sur la surface de la sphere
+                    // std::cout << "Coll: " << k << " dist: " << dist << " REPULSIVE: " << REPULSIVE << std::endl;
+                    // std::cout << " center: " << center << " radius: " << radius << std::endl;
                 }
             }
         }
