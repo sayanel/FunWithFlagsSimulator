@@ -87,6 +87,7 @@ void main()
 	// vec4 normalFinal = transpose(inverse(MV)) * vec4(normal, 0);
 	// Normal = vec4(encodeNormal(normalFinal), SpecularPower/100);
     Color = vec4(diffuse, 1.0);
+    // Color = vec4(1,0,0, 1.0);
     // Color = vec4(0,0,1,1);
     Position = MV * vec4(In.Position, 1);
 }

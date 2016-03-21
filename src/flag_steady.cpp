@@ -116,9 +116,6 @@ struct Flag {
             }  
 
         }
-        
-        // Init Octree : depth, position, dimension
-        // octree = Octree<glm::vec3>(6, glm::vec3(-2, 0., 0.), glm::vec3(10.0));
 
         // Les longueurs à vide sont calculés à partir de la position initiale
         // des points sur le drapeau
@@ -137,8 +134,6 @@ struct Flag {
         V1 = 0.005;
         V2 = 0.06;
 
-        
-
     }
 
 
@@ -152,8 +147,8 @@ struct Flag {
             for(int i = 0; i < gridWidth; ++i) {
                 int k = i + j * gridWidth;
             
-                for(int h = j; h < gridHeight; ++h) { 
-                    for(int w = i; w < gridWidth; ++w) { 
+                for(int h = 0; h < gridHeight; ++h) { 
+                    for(int w = 0; w < gridWidth; ++w) { 
                         int q = w + h * gridWidth;
                         if(q != k){
                             float epsilon = 0.20; // 0.15
@@ -163,7 +158,6 @@ struct Flag {
                                 if(D_AC) std::cout << "auto-collisions " << k << " avec " << q << std::endl;
                                 glm::vec3 REPULSIVE = repulsiveForce(dist, positionArray[k], positionArray[q]);
                                 forceArray[k] += REPULSIVE;
-                                forceArray[q] -= REPULSIVE; 
 
                             }
                         }
@@ -200,26 +194,32 @@ struct Flag {
                         }
                     }
                 }
-                // octree.remove(k, positionArray[k]);
             }
         }
                         
 
     }
 
-    void ballCollision(const glm::vec3 center,const float radius ){
+    void sphereCollisions(const glm::vec3 center,const float radius, float dt ){
         for(int j = 0; j < gridHeight; ++j) {
             for(int i = 0; i < gridWidth; ++i) {
                 int k = i + j * gridWidth;
                 
                 float rad = radius + 0.1;
-                glm::vec3 particleToCenter = positionArray[k]-center;
+                glm::vec3 particleToCenter = glm::normalize(positionArray[k]-center);
                 float dist = glm::distance(positionArray[k], center);
 
-                if ( dist < rad) // si la particule rentre dans la sphere
+                if (dist < rad) // si la particule rentre dans la sphere
                 {
-                    glm::vec3 REPULSIVE = glm::vec3(glm::normalize(particleToCenter)*(rad-dist));
-                    forceArray[k] += REPULSIVE; // envoie la particule sur la surface de la sphere
+                    glm::vec3 REPULSIVE = 1.f * glm::vec3(particleToCenter * (rad-dist));
+                    forceArray[k] += REPULSIVE; 
+
+                    // float d = 1.f/sqrt(dist) - 1.f;
+                    // glm::vec3 repulseForce = glm::vec3(particleToCenter * d);
+                    // glm::vec3 brakeForce = - 0.005f * glm::vec3(particleToCenter / dt);
+                    // REPULSIVE = repulseForce + brakeForce;
+                    // positionArray[k] += REPULSIVE; 
+
                     // std::cout << "Coll: " << k << " dist: " << dist << " REPULSIVE: " << REPULSIVE << std::endl;
                     // std::cout << " center: " << center << " radius: " << radius << std::endl;
                 }
@@ -227,7 +227,7 @@ struct Flag {
         }
     }
 
-
+ 
 
     // Applique les forces internes sur chaque point du drapeau SAUF les points fixes
     // TODO
@@ -543,8 +543,11 @@ int main() {
     int widthFlag = 15;
     int heightFlag = 10;
     float epsilonD = 0.3;
-    float radius = 1.f;
-    glm::vec3 center = glm::vec3(-3.5,0,0);
+    bool sphereDraw = true; 
+    bool octreeDraw = false;
+    float radius = 3.f;
+    float centerX = -1.5;
+    glm::vec3 center = glm::vec3(centerX,-4.0, 0);
 
     // Flag flag(4096.f, 2, 1.5, 30, 20); // Création d'un drapeau // Flag(float mass, float width, float height, int gridWidth, int gridHeight)
     Flag flag(4096.f, 2, 1.5, widthFlag, heightFlag, depth, position, dim, epsilonD); // Création d'un drapeau // Flag(float mass, float width, float height, int gridWidth, int gridHeight)
@@ -588,21 +591,21 @@ int main() {
         // Textures
             Graphics::TextureHandler texHandler;
 
-        std::string TexBricksDiff = "bricks_diff";
-        texHandler.add(Graphics::Texture("../assets/textures/spnza_bricks_a_diff.tga"), TexBricksDiff);
-        std::string TexBricksSpec = "bricks_spec";
-        texHandler.add(Graphics::Texture("../assets/textures/spnza_bricks_a_spec.tga"), TexBricksSpec);
-        std::string TexBricksNormal = "bricks_normal";
-        texHandler.add(Graphics::Texture("../assets/textures/spnza_bricks_a_normal.tga"), TexBricksNormal);
+            std::string TexBricksDiff = "bricks_diff";
+            texHandler.add(Graphics::Texture("../assets/textures/spnza_bricks_a_diff.tga"), TexBricksDiff);
+            std::string TexBricksSpec = "bricks_spec";
+            texHandler.add(Graphics::Texture("../assets/textures/spnza_bricks_a_spec.tga"), TexBricksSpec);
+            std::string TexBricksNormal = "bricks_normal";
+            texHandler.add(Graphics::Texture("../assets/textures/spnza_bricks_a_normal.tga"), TexBricksNormal);
 
-        sphereMesh.attachTexture(&texHandler[TexBricksDiff], GL_TEXTURE0);
-        sphereMesh.attachTexture(&texHandler[TexBricksSpec], GL_TEXTURE1);
-        sphereMesh.attachTexture(&texHandler[TexBricksNormal], GL_TEXTURE2);
+            sphereMesh.attachTexture(&texHandler[TexBricksDiff], GL_TEXTURE0);
+            sphereMesh.attachTexture(&texHandler[TexBricksSpec], GL_TEXTURE1);
+            sphereMesh.attachTexture(&texHandler[TexBricksNormal], GL_TEXTURE2);
 
-        // for geometry shading
-        mainShader.updateUniform(Graphics::UBO_keys::DIFFUSE, 0);
-        mainShader.updateUniform(Graphics::UBO_keys::SPECULAR, 1);
-        mainShader.updateUniform(Graphics::UBO_keys::NORMAL_MAP, 2);
+            // for geometry shading
+            mainShader.updateUniform(Graphics::UBO_keys::DIFFUSE, 0);
+            mainShader.updateUniform(Graphics::UBO_keys::SPECULAR, 1);
+            mainShader.updateUniform(Graphics::UBO_keys::NORMAL_MAP, 2);
 
         // !/SPHERE
 
@@ -636,6 +639,7 @@ int main() {
 
             flag.reset();
         });
+        atb::addVarRW(gui, ATB_VAR(centerX), "step=0.1");
         atb::addButton(gui, "simu1", [&]() {
             WIND = glm::sphericalRand(0.004f);
             GRAVITY = glm::vec3(0.00f, -0.005, 0.f);
@@ -646,6 +650,10 @@ int main() {
         atb::addButton(gui, "simu3", [&]() {
             WIND = glm::sphericalRand(0.08f);
         });
+        atb::addButton(gui, "simu4", [&]() {
+            WIND = glm::sphericalRand(0.05f);
+            GRAVITY = glm::vec3(0.00f, -0.005, 0.f);
+        });
         atb::addButton(gui, "w/ wind", [&]() {
             WIND = glm::sphericalRand(0.0f);
         });
@@ -655,7 +663,9 @@ int main() {
         atb::addButton(gui, "left gravity", [&]() {
             GRAVITY = glm::vec3(-0.05f, 0.0f, 0.f);
         });
-
+        atb::addButton(gui, "down gravity", [&]() {
+            GRAVITY = glm::vec3(0.00f, -0.05f, 0.f);
+        });
 
 
 
@@ -671,15 +681,18 @@ int main() {
         flag.fillOctree();
 
         // Draw Octree
-        glm::mat4 projection = glm::perspective(70.f, float(WINDOW_WIDTH) / WINDOW_HEIGHT, 0.1f, 10000.f);
-        drawProgram.updateUniform("MVP", projection * camera.getViewMatrix());
-        flag.octree.draw(drawProgram);
-        flag.octree.drawRecursive(drawProgram);
-        glBindVertexArray(0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        if(octreeDraw){     
+            glm::mat4 projection = glm::perspective(70.f, float(WINDOW_WIDTH) / WINDOW_HEIGHT, 0.1f, 10000.f);
+            drawProgram.updateUniform("MVP", projection * camera.getViewMatrix());
+            flag.octree.draw(drawProgram);
+            flag.octree.drawRecursive(drawProgram);
+            glBindVertexArray(0);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+        }
 
         // Render Sphere
+        if(sphereDraw){
             glm::mat4 proj = glm::perspective(70.f, float(WINDOW_WIDTH) / WINDOW_HEIGHT, 0.1f, 10000.f);
             glm::mat4 worldToView = camera.getViewMatrix();
             glm::mat4 objectToWorld;
@@ -698,6 +711,7 @@ int main() {
             glDrawElements(GL_TRIANGLES, sphereMesh.getVertexCount() * 1000, GL_UNSIGNED_INT, (void*)0);
             glBindTexture(GL_TEXTURE_2D, 0);
             glBindVertexArray(0); //debind vao
+        }
 
         // -----------------
 
@@ -708,7 +722,7 @@ int main() {
             flag.applyExternalForce(WIND); // Applique un "vent" de direction aléatoire et de force 0.1 Newtons
             flag.applyInternalForces(dt); // Applique les forces internes
             flag.autoCollisions(dt);
-            flag.ballCollision(center, radius);
+            if(sphereDraw) flag.sphereCollisions(center, radius, dt);
             flag.emptyOctree(); // clear octree
             flag.update(dt); // Mise à jour du système à partir des forces appliquées
         }
